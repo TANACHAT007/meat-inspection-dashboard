@@ -1,0 +1,58 @@
+import { useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useData } from '../contexts/DataContext'
+import { useI18n } from '../contexts/I18nContext'
+import { lotStats } from '../services/stats'
+import { gradeOf } from '../config'
+import { GradeBars, Histogram, Stat, StatusBadge, StatusBars } from '../components/Charts'
+
+const STATE_STYLE = {
+  running: 'bg-leaf-500/15 text-leaf-600 dark:text-leaf-400', idle: 'bg-sky-500/15 text-sky-600 dark:text-sky-300',
+  estop: 'bg-red-500/15 text-red-600 dark:text-red-300', offline: 'bg-stone-500/15 text-stone-500',
+}
+export default function Dashboard() {
+  const { current, items, status, ready, watchLot } = useData()
+  const { t, fmt, fmtTime } = useI18n()
+  useEffect(() => { if (current) watchLot(current.id) }, [current, watchLot])
+  const st = useMemo(() => lotStats(current ? items[current.id] : {}), [current, items])
+  const state = status?.updated && Date.now() - status.updated < 120000 ? status.state || 'idle' : 'offline'
+  if (!ready) return <div className="muted py-20 text-center">…</div>
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <div><div className="muted text-sm">{t('current_lot')}</div><h1 className="text-2xl">{current ? current.name || current.id : t('no_lot')}</h1></div>
+        <div className="ml-auto flex items-center gap-2">
+          <span className={`chip ${STATE_STYLE[state]}`}>{state === 'running' && <span className="h-2 w-2 animate-pulse rounded-full bg-current" />}{t('status_' + state)}</span>
+          {current && <Link to={'/lot/' + current.id} className="btn-primary text-sm">{t('view_report')}</Link>}
+        </div>
+      </div>
+      {status?.updated && <div className="muted -mt-3 text-xs">{t('last_seen', { t: fmtTime(status.updated, false) })}</div>}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label={t('total_trays')} value={fmt(st.n)} unit={t('trays')} />
+        <Stat label={t('avg_marbling')} value={fmt(st.mbMean, 1)} unit="%" accent />
+        <Stat label={t('avg_temp')} value={fmt(st.tp, 1)} unit="°C" />
+        <Stat label={t('rate')} value={fmt(st.rate, 1)} unit={t('per_min')} />
+        <Stat label={t('alarms')} value={fmt(st.byStatus.alarm)} unit={t('trays')} />
+      </div>
+      <div className="grid gap-5 lg:grid-cols-5">
+        <section className="card p-5 lg:col-span-3">
+          <h2 className="mb-4 text-lg">{t('by_status')}</h2><StatusBars byStatus={st.byStatus} total={st.n} />
+          <h2 className="mb-2 mt-7 text-lg">{t('marbling_dist')}</h2><Histogram bins={st.bins} />
+          <h2 className="mb-4 mt-7 text-lg">{t('by_grade')}</h2><GradeBars byGrade={st.byGrade} total={st.n} />
+        </section>
+        <section className="card p-5 lg:col-span-2">
+          <h2 className="mb-3 text-lg">{t('recent')}</h2>
+          <ul className="flex flex-col"><AnimatePresence initial={false}>
+            {st.recent.map((i) => (
+              <motion.li key={i.t + '-' + i.mb} layout initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 border-b border-black/5 py-2 last:border-0 dark:border-white/10">
+                <span className="muted num w-16 text-xs">{fmtTime(i.t, false)}</span><StatusBadge s={i.st} />
+                <span className="num ml-auto text-sm"><b>{fmt(i.mb, 1)}%</b> · {fmt(i.tp, 1)}°C</span>
+                <span className="chip bg-black/5 dark:bg-white/10">{t('grade_' + gradeOf(i.mb))}</span>
+              </motion.li>))}
+          </AnimatePresence>{!st.recent.length && <li className="muted py-8 text-center text-sm">—</li>}</ul>
+        </section>
+      </div>
+    </div>
+  )
+}
