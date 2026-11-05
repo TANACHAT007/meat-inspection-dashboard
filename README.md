@@ -19,6 +19,6 @@ npm install && npm run dev
 npm test          # validate.js + stats.js unit tests
 npm run build
 ```
-Push to `main` → GitHub Pages (`.github/workflows/deploy.yml`). `BASE` in `vite.config.js` = repository name.
+Deploy: `sh scripts/deploy.sh` (builds and pushes dist/ to the `gh-pages` branch; Pages source = gh-pages). `BASE` in `vite.config.js` = repository name.
 
 Not a food-safety certificate. Grading thresholds are USER_UNVALIDATED until the Validate page has been run on real packs.
