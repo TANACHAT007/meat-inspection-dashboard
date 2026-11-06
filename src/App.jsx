@@ -7,6 +7,8 @@ import Lots from './pages/Lots'
 import LotReport from './pages/LotReport'
 import Validate from './pages/Validate'
 import Machine from './pages/Machine'
+import Simulate from './pages/Simulate'
+import Train from './pages/Train'
 
 const Viewer3D = lazy(() => import('./pages/Viewer3D'))   // three.js is loaded only when this page is opened
 const Page = ({ children }) => (<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>{children}</motion.div>)
@@ -21,6 +23,8 @@ export default function App() {
           <Route path="/lots" element={<Page><Lots /></Page>} />
           <Route path="/lot/:id" element={<Page><LotReport /></Page>} />
           <Route path="/validate" element={<Page><Validate /></Page>} />
+          <Route path="/simulate" element={<Page><Simulate /></Page>} />
+          <Route path="/train" element={<Page><Train /></Page>} />
           <Route path="/machine" element={<Page><Machine /></Page>} />
           <Route path="/3d" element={<Page><Suspense fallback={<div className="muted py-20 text-center">…</div>}><Viewer3D /></Suspense></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
